@@ -1,4 +1,4 @@
-package com.vincent.springbootmall.dao.ipml;
+package com.vincent.springbootmall.dao.impl;
 
 import com.vincent.springbootmall.dao.ProductDao;
 import com.vincent.springbootmall.dto.ProductQueryParams;
