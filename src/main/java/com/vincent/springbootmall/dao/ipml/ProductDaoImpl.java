@@ -30,17 +30,7 @@ public class ProductDaoImpl implements ProductDao {
         Map<String, Object> map = new HashMap<>();
 
         // 查詢條件
-        // AND 前面一定要加空白鍵，不然會跟1=1 黏在一起沒辦法處理
-        if (productQueryParams.getCategory() != null) {
-            sql = sql + " AND category = :category";
-            map.put("category", productQueryParams.getCategory().name());
-        }
-
-        // %要加在map裏面
-        if (productQueryParams.getSearch() != null) {
-            sql = sql + " AND product_name LIKE :search";
-            map.put("search", "%" + productQueryParams.getSearch() + "%");
-        }
+        sql = addFilteringSql(sql, map, productQueryParams);
 
         // 使用queryForObject將返回值回傳所需的類型
         Integer total = namedParameterJdbcTemplate.queryForObject(sql, map, Integer.class);
@@ -58,17 +48,7 @@ public class ProductDaoImpl implements ProductDao {
         Map<String, Object> map = new HashMap<>();
 
         // 查詢條件
-        // AND 前面一定要加空白鍵，不然會跟1=1 黏在一起沒辦法處理
-        if (productQueryParams.getCategory() != null) {
-            sql = sql + " AND category = :category";
-            map.put("category", productQueryParams.getCategory().name());
-        }
-
-        // %要加在map裏面
-        if (productQueryParams.getSearch() != null) {
-            sql = sql + " AND product_name LIKE :search";
-            map.put("search", "%" + productQueryParams.getSearch() + "%");
-        }
+        sql = addFilteringSql(sql, map, productQueryParams);
 
         // 排序
         // orderBy 只能用字串拼接
@@ -154,5 +134,21 @@ public class ProductDaoImpl implements ProductDao {
         map.put("productId", productId);
 
         namedParameterJdbcTemplate.update(sql, map);
+    }
+
+    private String addFilteringSql(String sql, Map<String, Object> map, ProductQueryParams productQueryParams) {
+        // AND 前面一定要加空白鍵，不然會跟1=1 黏在一起沒辦法處理
+        if (productQueryParams.getCategory() != null) {
+            sql = sql + " AND category = :category";
+            map.put("category", productQueryParams.getCategory().name());
+        }
+
+        // %要加在map裏面
+        if (productQueryParams.getSearch() != null) {
+            sql = sql + " AND product_name LIKE :search";
+            map.put("search", "%" + productQueryParams.getSearch() + "%");
+        }
+
+        return sql;
     }
 }
