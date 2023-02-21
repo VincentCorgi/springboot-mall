@@ -2,16 +2,22 @@ package com.vincent.springbootmall.service.impl;
 
 import com.vincent.springbootmall.dao.OrderDao;
 import com.vincent.springbootmall.dao.ProductDao;
+import com.vincent.springbootmall.dao.UserDao;
 import com.vincent.springbootmall.dto.BuyItem;
 import com.vincent.springbootmall.dto.CreateOrderRequest;
 import com.vincent.springbootmall.model.Order;
 import com.vincent.springbootmall.model.OrderItem;
 import com.vincent.springbootmall.model.Product;
+import com.vincent.springbootmall.model.User;
 import com.vincent.springbootmall.service.OrderService;
 import com.vincent.springbootmall.service.ProductService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,11 +25,16 @@ import java.util.List;
 @Component
 public class OrderServiceImpl implements OrderService {
 
+    private final static Logger log = LoggerFactory.getLogger(OrderServiceImpl.class);
+
     @Autowired
     private OrderDao orderDao;
 
     @Autowired
     private ProductDao productDao;
+
+    @Autowired
+    private UserDao userDao;
 
     @Override
     public Order getOrderById(Integer orderId) {
@@ -40,12 +51,32 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     @Override
     public Integer createOrder(Integer userId, CreateOrderRequest createOrderRequest) {
+        // 檢查 user 是否存在
+        User user = userDao.getUserById(userId);
+
+        if (user == null) {
+            log.warn("該 userId {} 不存在", userId);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
 
         int totalAmount = 0;
         List<OrderItem> orderItemList = new ArrayList<>();
 
         for (BuyItem buyItem : createOrderRequest.getBuyItemList()) {
             Product product = productDao.getProductByID(buyItem.getProductId());
+
+            // 檢查 product 是否存在、庫存是否足夠
+            if (product == null) {
+                log.warn("商品 {} 不存在", buyItem.getProductId());
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+            } else if (product.getStock() < buyItem.getQuantity()) {
+                log.warn("商品 {} 庫存數量不足，無法購買。剩餘庫存數量 {}，欲購買數量 {}",
+                        buyItem.getProductId(), product.getStock(), buyItem.getQuantity());
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+            }
+
+            // 扣除商品庫存
+            productDao.updateStock(product.getProductId(), product.getStock() - buyItem.getQuantity());
 
             // 計算總價錢
             int amount = buyItem.getQuantity() * product.getPrice();
