@@ -4,6 +4,7 @@ import com.vincent.springbootmall.dao.OrderDao;
 import com.vincent.springbootmall.dao.ProductDao;
 import com.vincent.springbootmall.dto.BuyItem;
 import com.vincent.springbootmall.dto.CreateOrderRequest;
+import com.vincent.springbootmall.model.Order;
 import com.vincent.springbootmall.model.OrderItem;
 import com.vincent.springbootmall.model.Product;
 import com.vincent.springbootmall.service.OrderService;
@@ -23,6 +24,17 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private ProductDao productDao;
+
+    @Override
+    public Order getOrderById(Integer orderId) {
+        Order order = orderDao.getOrderById(orderId);
+
+        List<OrderItem> orderItemList = orderDao.getOrderItemsByOrderId(orderId);
+
+        order.setOrderItemList(orderItemList);
+
+        return order;
+    }
 
     // 控制多張table 一定要加 @Transactional 0 or 1
     @Transactional
@@ -51,7 +63,7 @@ public class OrderServiceImpl implements OrderService {
         // 創建訂單
         Integer orderId = orderDao.createOrder(userId, totalAmount);
 
-        orderDao.createOrderItems(userId, orderItemList);
+        orderDao.createOrderItems(orderId, orderItemList);
 
         return orderId;
     }
